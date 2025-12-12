@@ -114,5 +114,6 @@ dmypy.json
 .pyre/
 
 # Custom ignores
-data/*.json
+data/
 logs/*.log
+reports/
