@@ -1,0 +1,7 @@
+version: '3.8'
+services:
+  threat-aggregator:
+    build: .
+    volumes:
+      - ./data:/app/data
+      - ./reports:/app/reports
