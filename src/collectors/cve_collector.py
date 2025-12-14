@@ -1,5 +1,7 @@
 import requests
 import json
+import os
+from dotenv import load_dotenv
 from datetime import datetime, timedelta, timezone
 
 class CVECollector:
@@ -13,6 +15,14 @@ class CVECollector:
         :param api_url: The URL of the NIST NVD CVE API.
         """
         self.api_url = api_url
+        load_dotenv()
+        self.headers = {}
+        api_key = os.getenv("NIST_API_KEY")
+        if api_key:
+            self.headers["apiKey"] = api_key
+            print("[*] NIST API Key loaded.")
+        else:
+            print("[!] Warning: No API Key found. Rate limits will apply.")
 
     def fetch_recent_cves(self, days_back=7):
         """
@@ -35,7 +45,7 @@ class CVECollector:
         }
 
         try:
-            response = requests.get(self.api_url, params=params)
+            response = requests.get(self.api_url, params=params, headers=self.headers)
             response.raise_for_status()  # Raise an exception for bad status codes
             raw_data = response.json()
 
