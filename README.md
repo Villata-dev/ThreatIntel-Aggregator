@@ -34,9 +34,10 @@ To properly connect to the NIST NVD API, you need to set up an environment varia
 
     ```
     NIST_API_KEY="YOUR_API_KEY_HERE"
+    GEMINI_API_KEY="YOUR_GEMINI_API_KEY_HERE"
     ```
 
-    *Note: You can obtain a free API key from the [NIST NVD website](https://nvd.nist.gov/developers/request-an-api-key).*
+    *Note: You can obtain a free NIST API key from the [NIST NVD website](https://nvd.nist.gov/developers/request-an-api-key) and a Gemini API key from [Google AI Studio](https://aistudio.google.com/).*
 
 ## Project Structure
 
