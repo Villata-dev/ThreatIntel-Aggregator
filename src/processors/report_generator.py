@@ -2,6 +2,7 @@ import os
 import json
 import pandas as pd
 from datetime import datetime
+import google.generativeai as genai
 
 class ReportGenerator:
     """
@@ -19,6 +20,14 @@ class ReportGenerator:
         self.reports_dir = reports_dir
         self.report_data = None
         self.news_data = None
+        self.ai_summary = None
+
+        # Configure Gemini API
+        api_key = os.getenv("GEMINI_API_KEY")
+        if api_key:
+            genai.configure(api_key=api_key)
+        else:
+            print("[!] Warning: GEMINI_API_KEY not found. AI summary will be skipped.")
 
     def generate_report(self):
         """
@@ -57,6 +66,37 @@ class ReportGenerator:
                 self.news_data = json.load(f)
                 print(f"[+] Loaded news from {latest_news_file}.")
 
+    def generate_ai_summary(self):
+        """
+        Uses Gemini AI to generate an executive summary based on the latest CVEs.
+        """
+        if self.report_data is None or self.report_data.empty:
+            print("[!] No CVE data available to generate AI summary.")
+            return
+
+        if not os.getenv("GEMINI_API_KEY"):
+            print("[!] Skipping AI summary generation: GEMINI_API_KEY not set.")
+            return
+
+        print("[+] Generating AI summary...")
+        try:
+            # Take the top 10 most recent CVEs
+            recent_cves = self.report_data.head(10).to_dict(orient='records')
+            cve_data_str = json.dumps(recent_cves, indent=2)
+
+            prompt = (
+                "Actúa como un Analista de Ciberseguridad. Analiza la siguiente lista de vulnerabilidades recientes "
+                "y redacta un resumen ejecutivo de 2 párrafos destacando las tendencias, vectores de ataque comunes "
+                "o sistemas más afectados. Lista de CVEs: " + cve_data_str
+            )
+
+            model = genai.GenerativeModel('gemini-1.5-flash')
+            response = model.generate_content(prompt)
+            self.ai_summary = response.text
+            print("[+] AI summary generated successfully.")
+        except Exception as e:
+            print(f"[!] Error generating AI summary: {e}")
+
     def save_report(self):
         """
         Saves the processed data to a Markdown file.
@@ -74,7 +114,10 @@ class ReportGenerator:
         with open(report_filename, 'w') as f:
             f.write(f"# Threat Intelligence Report - {today_str}\n")
             f.write(f"## Executive Summary\n")
-            if self.report_data is not None:
+
+            if self.ai_summary:
+                f.write(f"{self.ai_summary}\n\n")
+            elif self.report_data is not None:
                 f.write(f"This report contains {len(self.report_data)} vulnerabilities collected from various sources.\n\n")
             else:
                 f.write("This report contains no new CVEs.\n\n")

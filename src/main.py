@@ -48,6 +48,7 @@ def main():
         logging.info("Step 3: Generating report...")
         report_generator = ReportGenerator()
         report_generator.generate_report()
+        report_generator.generate_ai_summary()
         report_generator.save_report()  # This method handles report directory creation
         logging.info("Step 3: Report generation complete.")
 
