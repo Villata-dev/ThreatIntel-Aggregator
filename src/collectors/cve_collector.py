@@ -1,8 +1,10 @@
 import requests
 import json
 import os
+import logging
 from dotenv import load_dotenv
 from datetime import datetime, timedelta, timezone
+from src.database.db_manager import SessionLocal, Vulnerability, init_db
 
 class CVECollector:
     """
@@ -71,6 +73,38 @@ class CVECollector:
         except requests.exceptions.RequestException as e:
             print(f"[!] Error fetching data: {e}")
             return None
+
+    def save_to_db(self, data):
+        """
+        Saves the given CVE data to the SQLite database.
+
+        :param data: A list of dictionaries, where each dictionary represents a parsed CVE.
+        """
+        if not data:
+            logging.warning("No CVE data to save to database.")
+            return
+
+        init_db()
+        db = SessionLocal()
+        count = 0
+        try:
+            for item in data:
+                # Use merge to insert or update
+                vulnerability = Vulnerability(
+                    id=item['cve_id'],
+                    description=item['description'],
+                    published_date=datetime.fromisoformat(item['published_date'].replace('Z', '+00:00')),
+                    vuln_status=item['vuln_status']
+                )
+                db.merge(vulnerability)
+                count += 1
+            db.commit()
+            logging.info(f"Successfully saved {count} CVEs to the database.")
+        except Exception as e:
+            db.rollback()
+            logging.error(f"Error saving CVEs to database: {e}")
+        finally:
+            db.close()
 
     def save_to_file(self, data):
         """

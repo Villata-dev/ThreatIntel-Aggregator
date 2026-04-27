@@ -24,10 +24,8 @@ def main():
         cve_collector = CVECollector()
         recent_cves = cve_collector.fetch_recent_cves()
         if recent_cves:
-            # Ensure the data directory exists before saving
-            if not os.path.exists('data'):
-                os.makedirs('data')
-            cve_collector.save_to_file(recent_cves)
+            # Save CVEs to the database
+            cve_collector.save_to_db(recent_cves)
         logging.info("Step 1: CVE collection complete.")
 
         # Step 2: Collect News

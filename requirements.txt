@@ -4,3 +4,4 @@ python-dotenv
 pytest
 feedparser
 google-generativeai
+sqlalchemy
