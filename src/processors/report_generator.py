@@ -35,7 +35,7 @@ class ReportGenerator:
         """
         print("[+] Generating report...")
         # Process CVEs
-        cve_files = [f for f in os.listdir(self.data_dir) if f.startswith('cves_') and f.endswith('.json')]
+        cve_files = sorted([f for f in os.listdir(self.data_dir) if f.startswith('cves_') and f.endswith('.json')])
         if not cve_files:
             print("[!] No CVE files found in the data directory.")
             self.report_data = pd.DataFrame()
@@ -81,7 +81,12 @@ class ReportGenerator:
         print("[+] Generating AI summary...")
         try:
             # Take the top 10 most recent CVEs
-            recent_cves = self.report_data.head(10).to_dict(orient='records')
+            # Convert Timestamps to strings for JSON serialization
+            recent_cves_df = self.report_data.head(10).copy()
+            if 'published_date' in recent_cves_df.columns:
+                recent_cves_df['published_date'] = recent_cves_df['published_date'].dt.strftime('%Y-%m-%d %H:%M:%S')
+
+            recent_cves = recent_cves_df.to_dict(orient='records')
             cve_data_str = json.dumps(recent_cves, indent=2)
 
             prompt = (

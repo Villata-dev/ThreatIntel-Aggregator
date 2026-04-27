@@ -1,6 +1,7 @@
 import os
 import json
 import unittest
+from unittest.mock import patch, MagicMock
 import pandas as pd
 from datetime import datetime, timedelta
 from src.processors.report_generator import ReportGenerator
@@ -76,6 +77,27 @@ class TestReportGenerator(unittest.TestCase):
             self.assertIn("# Threat Intelligence Report", content)
             self.assertIn("CVE-2023-0001", content)
             self.assertIn("CVE-2023-0003", content)
+
+    @patch('src.processors.report_generator.genai.GenerativeModel.generate_content')
+    @patch('os.getenv')
+    def test_generate_ai_summary_success(self, mock_getenv, mock_generate_content):
+        """
+        Test that generate_ai_summary correctly updates ai_summary using a mocked Gemini API.
+        """
+        # Configure os.getenv to return a fake API key
+        mock_getenv.side_effect = lambda key: "fake_api_key" if key == "GEMINI_API_KEY" else os.environ.get(key)
+
+        # Configure the mock for generate_content
+        mock_response = MagicMock()
+        mock_response.text = "Resumen simulado por IA"
+        mock_generate_content.return_value = mock_response
+
+        generator = ReportGenerator(data_dir=self.data_dir, reports_dir=self.reports_dir)
+        generator.generate_report()
+        generator.generate_ai_summary()
+
+        self.assertEqual(generator.ai_summary, "Resumen simulado por IA")
+        mock_generate_content.assert_called_once()
 
 if __name__ == "__main__":
     unittest.main()
