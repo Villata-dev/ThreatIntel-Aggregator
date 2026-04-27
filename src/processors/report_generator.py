@@ -3,6 +3,7 @@ import json
 import pandas as pd
 from datetime import datetime
 import google.generativeai as genai
+from src.database.db_manager import engine
 
 class ReportGenerator:
     """
@@ -31,29 +32,25 @@ class ReportGenerator:
 
     def generate_report(self):
         """
-        Scans the data directory for CVE and news files, processes them, and prepares the report data.
+        Reads CVE data from the SQLite database and news from JSON files,
+        processes them, and prepares the report data.
         """
         print("[+] Generating report...")
-        # Process CVEs
-        cve_files = sorted([f for f in os.listdir(self.data_dir) if f.startswith('cves_') and f.endswith('.json')])
-        if not cve_files:
-            print("[!] No CVE files found in the data directory.")
-            self.report_data = pd.DataFrame()
-        else:
-            all_cves = []
-            for file in cve_files:
-                with open(os.path.join(self.data_dir, file), 'r') as f:
-                    all_cves.extend(json.load(f))
-            if not all_cves:
-                print("[!] No CVEs found in the files.")
+        # Process CVEs from Database
+        try:
+            query = "SELECT id as cve_id, description, published_date, vuln_status FROM vulnerabilities"
+            df = pd.read_sql(query, con=engine)
+            if df.empty:
+                print("[!] No CVEs found in the database.")
                 self.report_data = pd.DataFrame()
             else:
-                df = pd.DataFrame(all_cves)
-                df.drop_duplicates(subset='cve_id', inplace=True)
                 df['published_date'] = pd.to_datetime(df['published_date'])
                 df.sort_values(by='published_date', ascending=False, inplace=True)
                 self.report_data = df
-                print(f"[+] Processed {len(self.report_data)} unique CVEs.")
+                print(f"[+] Processed {len(self.report_data)} unique CVEs from database.")
+        except Exception as e:
+            print(f"[!] Error reading from database: {e}")
+            self.report_data = pd.DataFrame()
 
         # Process news
         news_files = [f for f in os.listdir(self.data_dir) if f.startswith('news_') and f.endswith('.json')]

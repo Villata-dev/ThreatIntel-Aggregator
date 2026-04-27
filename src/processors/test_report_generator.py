@@ -5,6 +5,7 @@ from unittest.mock import patch, MagicMock
 import pandas as pd
 from datetime import datetime, timedelta
 from src.processors.report_generator import ReportGenerator
+from src.database.db_manager import SessionLocal, Vulnerability, Base, engine
 
 class TestReportGenerator(unittest.TestCase):
     """
@@ -18,28 +19,34 @@ class TestReportGenerator(unittest.TestCase):
         self.reports_dir = "test_reports/"
         os.makedirs(self.data_dir, exist_ok=True)
 
-        # Create dummy CVE data
-        self.cve_data_1 = [
-            {"cve_id": "CVE-2023-0001", "description": "Test CVE 1", "published_date": (datetime.now() - timedelta(days=1)).isoformat(), "vuln_status": "Analyzed"},
-            {"cve_id": "CVE-2023-0002", "description": "Test CVE 2", "published_date": (datetime.now() - timedelta(days=2)).isoformat(), "vuln_status": "Analyzed"}
-        ]
-        self.cve_data_2 = [
-            {"cve_id": "CVE-2023-0001", "description": "Duplicate CVE", "published_date": (datetime.now() - timedelta(days=3)).isoformat(), "vuln_status": "Analyzed"},
-            {"cve_id": "CVE-2023-0003", "description": "Test CVE 3", "published_date": datetime.now().isoformat(), "vuln_status": "Analyzed"}
-        ]
+        # Initialize DB and clear table
+        Base.metadata.create_all(bind=engine)
+        self.db = SessionLocal()
+        self.db.query(Vulnerability).delete()
+        self.db.commit()
 
-        with open(os.path.join(self.data_dir, "cves_1.json"), "w") as f:
-            json.dump(self.cve_data_1, f)
-        with open(os.path.join(self.data_dir, "cves_2.json"), "w") as f:
-            json.dump(self.cve_data_2, f)
+        # Create dummy CVE data
+        self.cve_data = [
+            Vulnerability(id="CVE-2023-0001", description="Test CVE 1", published_date=datetime.now() - timedelta(days=1), vuln_status="Analyzed"),
+            Vulnerability(id="CVE-2023-0002", description="Test CVE 2", published_date=datetime.now() - timedelta(days=2), vuln_status="Analyzed"),
+            Vulnerability(id="CVE-2023-0003", description="Test CVE 3", published_date=datetime.now(), vuln_status="Analyzed")
+        ]
+        for v in self.cve_data:
+            self.db.add(v)
+        self.db.commit()
 
     def tearDown(self):
         """
         Clean up the test environment after each test.
         """
-        for file in os.listdir(self.data_dir):
-            os.remove(os.path.join(self.data_dir, file))
-        os.rmdir(self.data_dir)
+        self.db.query(Vulnerability).delete()
+        self.db.commit()
+        self.db.close()
+
+        if os.path.exists(self.data_dir):
+            for file in os.listdir(self.data_dir):
+                os.remove(os.path.join(self.data_dir, file))
+            os.rmdir(self.data_dir)
 
         if os.path.exists(self.reports_dir):
             for file in os.listdir(self.reports_dir):
