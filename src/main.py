@@ -8,6 +8,7 @@ sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')
 from src.collectors.cve_collector import CVECollector
 from src.collectors.rss_collector import RSSCollector
 from src.processors.report_generator import ReportGenerator
+from src.database.db_manager import init_db
 
 def main():
     """
@@ -17,6 +18,9 @@ def main():
     logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 
     logging.info("Starting the Threat Intel Aggregator pipeline...")
+
+    # Initialize the database
+    init_db()
 
     try:
         # Step 1: Collect CVEs

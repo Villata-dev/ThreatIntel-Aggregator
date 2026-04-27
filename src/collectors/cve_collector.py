@@ -84,7 +84,6 @@ class CVECollector:
             logging.warning("No CVE data to save to database.")
             return
 
-        init_db()
         db = SessionLocal()
         count = 0
         try:

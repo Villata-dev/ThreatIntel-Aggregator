@@ -1,10 +1,9 @@
 import os
 from sqlalchemy import create_engine, Column, String, DateTime, Text
-from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy.orm import sessionmaker
+from sqlalchemy.orm import declarative_base, sessionmaker
 
-# Define the database URL
-DB_URL = "sqlite:///data/threatintel.db"
+# Use environment variable for database URL or default to production
+DB_URL = os.getenv("DATABASE_URL", "sqlite:///data/threatintel.db")
 
 # Create the engine
 engine = create_engine(DB_URL, connect_args={"check_same_thread": False})
@@ -36,10 +35,10 @@ def init_db():
 
 def get_db():
     """
-    Returns a new database session.
+    Generator that provides a database session and ensures it's closed after use.
     """
     db = SessionLocal()
     try:
-        return db
+        yield db
     finally:
         db.close()
