@@ -8,6 +8,7 @@ sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')
 from src.collectors.cve_collector import CVECollector
 from src.collectors.rss_collector import RSSCollector
 from src.processors.report_generator import ReportGenerator
+from src.notifiers.telegram_notifier import TelegramNotifier
 
 def main():
     """
@@ -49,6 +50,15 @@ def main():
         report_generator.generate_ai_summary()
         report_generator.save_report()  # This method handles report directory creation
         logging.info("Step 3: Report generation complete.")
+
+        # Step 4: Send Notifications
+        if report_generator.ai_summary:
+            logging.info("Step 4: Sending Telegram notification...")
+            telegram_notifier = TelegramNotifier()
+            telegram_notifier.send_message(report_generator.ai_summary)
+            logging.info("Step 4: Telegram notification sent.")
+        else:
+            logging.info("Step 4: Skipping Telegram notification (no AI summary).")
 
         logging.info("Threat Intel Aggregator pipeline finished successfully.")
 
