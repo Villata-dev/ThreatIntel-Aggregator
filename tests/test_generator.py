@@ -24,8 +24,8 @@ def setup_db():
 def cve_data():
     """Fixture to create sample CVE data for testing."""
     return [
-        {"cve_id": "CVE-2023-1234", "description": "Description 1", "published_date": "2023-01-01T00:00:00", "vuln_status": "Analyzed"},
-        {"cve_id": "CVE-2023-5678", "description": "Description 2", "published_date": "2023-01-02T00:00:00", "vuln_status": "Analyzed"}
+        {"cve_id": "CVE-2023-1234", "description": "Description 1", "published_date": "2023-01-01T00:00:00", "vuln_status": "Analyzed", "cvss_score": 9.1},
+        {"cve_id": "CVE-2023-5678", "description": "Description 2", "published_date": "2023-01-02T00:00:00", "vuln_status": "Analyzed", "cvss_score": 4.5}
     ]
 
 @pytest.fixture
@@ -50,7 +50,8 @@ def test_deduplication(cve_data, setup_db, temp_data_dir):
                 id=item['cve_id'],
                 description=item['description'],
                 published_date=pd.to_datetime(item['published_date']),
-                vuln_status=item['vuln_status']
+                vuln_status=item['vuln_status'],
+                cvss_score=item['cvss_score']
             )
             db.add(v)
     db.commit()
@@ -86,7 +87,8 @@ def test_markdown_structure(cve_data, setup_db, temp_data_dir):
                 id=item['cve_id'],
                 description=item['description'],
                 published_date=pd.to_datetime(item['published_date']),
-                vuln_status=item['vuln_status']
+                vuln_status=item['vuln_status'],
+                cvss_score=item['cvss_score']
             )
             db.add(v)
     db.commit()

@@ -38,7 +38,7 @@ class ReportGenerator:
         print("[+] Generating report...")
         # Process CVEs from Database
         try:
-            query = "SELECT id as cve_id, description, published_date, vuln_status FROM vulnerabilities"
+            query = "SELECT id as cve_id, description, published_date, vuln_status, cvss_score FROM vulnerabilities"
             df = pd.read_sql(query, con=engine)
             if df.empty:
                 print("[!] No CVEs found in the database.")
@@ -125,13 +125,21 @@ class ReportGenerator:
                 f.write("This report contains no new CVEs.\n\n")
 
             f.write("## High Priority Vulnerabilities\n")
-            f.write("- (Placeholder for high-priority CVEs)\n\n")
+            high_priority = self.report_data[self.report_data['cvss_score'] > 7.0] if self.report_data is not None and not self.report_data.empty and 'cvss_score' in self.report_data.columns else pd.DataFrame()
+
+            if not high_priority.empty:
+                for index, row in high_priority.iterrows():
+                    f.write(f"- **{row['cve_id']}** (Score: {row['cvss_score']})\n")
+                f.write("\n")
+            else:
+                f.write("- No high-priority vulnerabilities identified.\n\n")
 
             if self.report_data is not None and not self.report_data.empty:
                 f.write("## Detailed CVE List\n")
                 for index, row in self.report_data.iterrows():
                     f.write(f"### {row['cve_id']}\n")
                     f.write(f"**Status:** {row['vuln_status']}\n")
+                    f.write(f"**Score:** {row['cvss_score'] if pd.notnull(row['cvss_score']) else 'N/A'}\n")
                     f.write(f"**Published:** {row['published_date'].strftime('%Y-%m-%d')}\n")
                     f.write(f"**Description:** {row['description']}\n")
                     f.write("---\n")
