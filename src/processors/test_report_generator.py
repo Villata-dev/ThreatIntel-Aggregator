@@ -27,9 +27,9 @@ class TestReportGenerator(unittest.TestCase):
 
         # Create dummy CVE data
         self.cve_data = [
-            Vulnerability(id="CVE-2023-0001", description="Test CVE 1", published_date=datetime.now() - timedelta(days=1), vuln_status="Analyzed"),
-            Vulnerability(id="CVE-2023-0002", description="Test CVE 2", published_date=datetime.now() - timedelta(days=2), vuln_status="Analyzed"),
-            Vulnerability(id="CVE-2023-0003", description="Test CVE 3", published_date=datetime.now(), vuln_status="Analyzed")
+            Vulnerability(id="CVE-2023-0001", description="Test CVE 1", published_date=datetime.now() - timedelta(days=1), vuln_status="Analyzed", cvss_score=8.5),
+            Vulnerability(id="CVE-2023-0002", description="Test CVE 2", published_date=datetime.now() - timedelta(days=2), vuln_status="Analyzed", cvss_score=5.0),
+            Vulnerability(id="CVE-2023-0003", description="Test CVE 3", published_date=datetime.now(), vuln_status="Analyzed", cvss_score=None)
         ]
         for v in self.cve_data:
             self.db.add(v)
@@ -84,6 +84,9 @@ class TestReportGenerator(unittest.TestCase):
             self.assertIn("# Threat Intelligence Report", content)
             self.assertIn("CVE-2023-0001", content)
             self.assertIn("CVE-2023-0003", content)
+            self.assertIn("High Priority Vulnerabilities", content)
+            self.assertIn("CVE-2023-0001", content.split("High Priority Vulnerabilities")[1].split("Detailed CVE List")[0])
+            self.assertNotIn("CVE-2023-0002", content.split("High Priority Vulnerabilities")[1].split("Detailed CVE List")[0])
 
     @patch('src.processors.report_generator.genai.GenerativeModel.generate_content')
     @patch('os.getenv')

@@ -61,11 +61,24 @@ class CVECollector:
                 published_date = cve_item.get('published')
                 vuln_status = cve_item.get('vulnStatus')
 
+                # Extract CVSS Score
+                metrics = cve_item.get('metrics', {})
+                cvss_score = None
+
+                # Try V3.1, then V3.0, then V2.0
+                for metric_key in ['cvssMetricV31', 'cvssMetricV30', 'cvssMetricV2']:
+                    metric_list = metrics.get(metric_key, [])
+                    if metric_list:
+                        cvss_score = metric_list[0].get('cvssData', {}).get('baseScore')
+                        if cvss_score is not None:
+                            break
+
                 parsed_cves.append({
                     'cve_id': cve_id,
                     'description': description,
                     'published_date': published_date,
-                    'vuln_status': vuln_status
+                    'vuln_status': vuln_status,
+                    'cvss_score': cvss_score
                 })
             print(f"[+] Found {len(parsed_cves)} CVEs.")
             return parsed_cves
@@ -94,7 +107,8 @@ class CVECollector:
                     id=item['cve_id'],
                     description=item['description'],
                     published_date=datetime.fromisoformat(item['published_date'].replace('Z', '+00:00')),
-                    vuln_status=item['vuln_status']
+                    vuln_status=item['vuln_status'],
+                    cvss_score=item.get('cvss_score')
                 )
                 db.merge(vulnerability)
                 count += 1

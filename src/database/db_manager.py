@@ -1,5 +1,5 @@
 import os
-from sqlalchemy import create_engine, Column, String, DateTime, Text
+from sqlalchemy import create_engine, Column, String, DateTime, Text, Float
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
 
@@ -25,6 +25,7 @@ class Vulnerability(Base):
     description = Column(Text)
     published_date = Column(DateTime)
     vuln_status = Column(String)
+    cvss_score = Column(Float)
 
 def init_db():
     """
