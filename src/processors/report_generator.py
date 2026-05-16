@@ -23,6 +23,10 @@ class ReportGenerator:
         self.news_data = None
         self.ai_summary = None
 
+        # Load keywords
+        keywords_env = os.getenv("TARGET_KEYWORDS", "")
+        self.keywords = [k.strip().lower() for k in keywords_env.split(",") if k.strip()]
+
         # Configure Gemini API
         api_key = os.getenv("GEMINI_API_KEY")
         if api_key:
@@ -48,6 +52,13 @@ class ReportGenerator:
                 df.sort_values(by='published_date', ascending=False, inplace=True)
                 self.report_data = df
                 print(f"[+] Processed {len(self.report_data)} unique CVEs from database.")
+
+            # Filter CVEs by keywords if provided
+            if self.keywords and not self.report_data.empty:
+                print(f"[+] Filtering CVEs by keywords: {', '.join(self.keywords)}")
+                mask = self.report_data['description'].str.contains('|'.join(self.keywords), case=False, na=False)
+                self.report_data = self.report_data[mask]
+                print(f"[+] Filtered CVEs: {len(self.report_data)} remaining.")
         except Exception as e:
             print(f"[!] Error reading from database: {e}")
             self.report_data = pd.DataFrame()
@@ -62,6 +73,20 @@ class ReportGenerator:
             with open(os.path.join(self.data_dir, latest_news_file), 'r') as f:
                 self.news_data = json.load(f)
                 print(f"[+] Loaded news from {latest_news_file}.")
+
+            # Filter News by keywords if provided
+            if self.keywords and self.news_data:
+                print(f"[+] Filtering news by keywords: {', '.join(self.keywords)}")
+                filtered_news = {}
+                for source, articles in self.news_data.items():
+                    matching_articles = [
+                        a for a in articles
+                        if any(k in a['title'].lower() for k in self.keywords)
+                    ]
+                    if matching_articles:
+                        filtered_news[source] = matching_articles
+                self.news_data = filtered_news
+                print(f"[+] Filtered News: {sum(len(a) for a in self.news_data.values())} remaining.")
 
     def generate_ai_summary(self):
         """
@@ -89,8 +114,13 @@ class ReportGenerator:
             prompt = (
                 "Actúa como un Analista de Ciberseguridad. Analiza la siguiente lista de vulnerabilidades recientes "
                 "y redacta un resumen ejecutivo de 2 párrafos destacando las tendencias, vectores de ataque comunes "
-                "o sistemas más afectados. Lista de CVEs: " + cve_data_str
+                "o sistemas más afectados."
             )
+
+            if self.keywords:
+                prompt += f" Por favor, presta especial atención a las siguientes palabras clave o tecnologías: {', '.join(self.keywords)}."
+
+            prompt += " Lista de CVEs: " + cve_data_str
 
             model = genai.GenerativeModel('gemini-1.5-flash')
             response = model.generate_content(prompt)
