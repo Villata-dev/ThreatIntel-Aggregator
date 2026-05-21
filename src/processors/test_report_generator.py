@@ -95,7 +95,7 @@ class TestReportGenerator(unittest.TestCase):
         Test that generate_ai_summary correctly updates ai_summary using a mocked Gemini API.
         """
         # Configure os.getenv to return a fake API key
-        mock_getenv.side_effect = lambda key: "fake_api_key" if key == "GEMINI_API_KEY" else os.environ.get(key)
+        mock_getenv.side_effect = lambda key, default=None: "fake_api_key" if key == "GEMINI_API_KEY" else (os.environ.get(key) if default is None else os.environ.get(key, default))
 
         # Configure the mock for generate_content
         mock_response = MagicMock()
